@@ -76,7 +76,7 @@ pipeline{
 			emailext body: 'Build successful', subject: 'Build successful', to: 'femcast@yahoo.com'
 			} 
 		success{
-			emailext body: 'Build successful', subject: 'Build successful', to: 'femcast@yahoo.com'
+			sh "echo 'The application has been successfully end to end deployed'"
 			}  
 		failure{
 			emailext body: 'Build successful', subject: 'Build successful', to: 'femcast@yahoo.com'
