@@ -1,0 +1,85 @@
+pipeline{ 
+	agent{
+		label 'Master'
+	} 
+	tools{
+		maven "Maven"
+		} 
+	options{
+		timestamps()
+		} 
+// 	triggers{
+// 		pollSCM('* * * * *')
+// 		} 
+	stages{
+		stage('1: CodeClone'){
+			steps{
+				sh "echo 'git clone the project repository from github'"
+				git credentialsId: 'Github-token', url: 'https://github.com/Pharmow/vprofile.git'
+
+				}
+			}
+			
+
+		stage('2: MavenBuild'){
+			steps{
+				sh "echo 'Using Maven as build tool'"
+				sh "mvn clean package -DskipTests"
+			} 
+		}
+			 
+		stage('3: CodeQualityAnalysis'){
+			steps{
+				sh "echo 'Start SonarQube server, sign in and authenticate'"
+				sh "mvn sonar:sonar"
+			} 
+		}
+			 
+		stage('4: ArtifactUpload'){
+			steps{
+				sh "echo 'Start Nexus server, sign in and authenticate'"
+				sh "mvn deploy -DskipTests"
+			} 
+		}
+			 
+		stage('5: Deploy2UAT'){
+			steps{
+				sh "echo 'Deploying to User Acceptance Testing Environment'"
+				deploy adapters: [tomcat9(credentialsId: 'my_tomcat_credentials', path: '', url: 'http://54.144.198.233:8080/')], contextPath: null, war: 'target/*.war'
+			}
+		}
+			  
+// 		stage('6: ManualApproval'){
+// 			steps{
+// 				sh "echo 'Application has been deployed to UAT'"
+// 				timeout(time: 10, unit: "MINUTES"){
+//                 input message("Hello the application is ready for your review and approval")
+// 			}  
+// 		}
+			
+		stage('7: Deploy2Prod'){
+			steps{
+				sh "echo 'Application successfully deployed to Production environment'"
+				deploy adapters: [tomcat9(credentialsId: 'my_tomcat_credentials', path: '', url: 'http://54.144.198.233:8080/')], contextPath: null, war: 'target/*.war'
+			} 
+		}
+			 
+		stage('8: SlackNotification'){
+			steps{
+				slackSend channel: 'https://app.slack.com/client/T050GNHUMJA/C050LG0EX6Z/thread/C050LG0EX6Z-1680363211.939349', message: 'Build succesful'
+			}
+		} 
+	}
+			
+	post{
+		always{
+			emailext body: 'Build successful', subject: 'Build successful', to: 'femcast@yahoo.com'
+			} 
+		success{
+			emailext body: 'Build successful', subject: 'Build successful', to: 'femcast@yahoo.com'
+			}  
+		failure{
+			emailext body: 'Build successful', subject: 'Build successful', to: 'femcast@yahoo.com'
+			}
+		}
+	}
